@@ -1,6 +1,8 @@
 [dependencies]
+cartopy = "*"
 openssl = ">=3, <3.6"
 matplotlib = ">=1"
+seaborn = "*"
 
     [dependencies.python]
     channel = "conda-forge"
