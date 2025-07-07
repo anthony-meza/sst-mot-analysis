@@ -2,6 +2,7 @@
 cartopy = "*"
 openssl = ">=3, <3.6"
 matplotlib = ">=1"
+cmocean = "*"
 seaborn = "*"
 
     [dependencies.python]

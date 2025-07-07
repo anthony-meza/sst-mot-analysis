@@ -2,11 +2,18 @@ using DrWatson
 @quickactivate "sst-mot-analysis"
 import DrWatson: plotsdir
 
-using TMI, GH19, PythonPlot, ProgressMeter
+using TMI, GH19, PythonPlot, PythonCall, ProgressMeter
 using Printf, Statistics
 using Colors, LaTeXStrings
+
 include("random_profiles.jl")
 include("load_GH19.jl")
+
+sns = pyimport("seaborn")
+custom_style = Dict("text.color" => "black")
+sns.set_theme(context="notebook", style="ticks", 
+              palette = "colorblind", font_scale=1.1, 
+              rc=custom_style)
 
 last_non_nan(v) = findlast(!isnan, v) !== nothing ? v[findlast(!isnan, v)] : NaN
 last_non_nan(m::Matrix) = last_non_nan.(eachcol(m))
@@ -69,14 +76,14 @@ function generate_temperature_difference_plot(bootstrap_results,
     sampling_description = sampling_method == :uniform ?
         "uniform grid sampling" : "area-weighted spherical sampling"
 
-    # reference values
+    # reference values for Seltzer 2024
     SeltΔMOT = 2.27; SeltΔMOT_σ = 0.46
 
     # figure + axes
-    fig, ax = subplots(figsize=(7,7), dpi=250)
+    fig, ax = subplots(figsize=(6,6))
 
     # x-range for reference lines
-    x_min, x_max = 0, 5
+    x_min, x_max = 0, 4.5
     xs = collect(range(x_min, x_max, length=200))
 
     # Seltzer line + error ribbon
@@ -90,7 +97,7 @@ function generate_temperature_difference_plot(bootstrap_results,
 
     # bootstrap means scatter
     ax.scatter(delta_sst, delta_mot;
-               s=9, alpha=0.4,
+               s=9, alpha=0.3,
                color="dodgerblue",
                linewidths=0.2,
                 label = "Pseudo Sample Average\n" * L"($n_s = $" * "$N_sample" * L"$)$",
@@ -106,7 +113,7 @@ function generate_temperature_difference_plot(bootstrap_results,
                s=100, edgecolor="k",
                facecolor="dodgerblue",
                linewidths=1.5,
-               label = "All Pseudo Sample Averages\n" * L"($n_{t} = n_s $" * L"\times" * "$Nboot" * L"$)$",
+               label = "All Pseudo Sample Averages\n" * L"($n_{a} = n_s $" * L"\times" * "$Nboot" * L"$)$",
                 zorder = 10)
 
     # true global-average point
@@ -120,7 +127,7 @@ function generate_temperature_difference_plot(bootstrap_results,
                s=100, edgecolor="k", 
                facecolor="sienna",
                linewidths=1.5,
-               label="TMI Volume Weighted Differences\n(GH19 PI – G14 LGM)", zorder = 10)
+               label="Volume/Area Weighted Differences\n(GH19 PI – G14 LGM)", zorder = 10)
 
     # labels, title, limits, legend
     # ax.set_xlabel(raw"$\overline{\Delta \mathrm{SST}}\;(^\circ\mathrm{C})$")
@@ -130,10 +137,8 @@ function generate_temperature_difference_plot(bootstrap_results,
     # ax.set_title(raw"$\Delta\,$Ocean Temp. (LGM vs. PI)")
     ax.set_xlim(x_min, x_max)
     ax.set_ylim(x_min, x_max)
-    ax.legend(loc="upper right", fontsize=8, ncols = 2)
+    ax.legend(loc="lower right", fontsize=8, ncols = 2, framealpha = 0.9)
     ax.spines["top"].set_visible(false)
     ax.spines["right"].set_visible(false)
-    # layout + save
-    # fig.tight_layout()
-    fig.savefig(plotsdir(output_filename), dpi = 200, bbox_inches = "tight")
+    return fig, ax 
 end
