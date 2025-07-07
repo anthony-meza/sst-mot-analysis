@@ -2,9 +2,9 @@ using DrWatson
 @quickactivate "sst-mot-analysis"
 import DrWatson: plotsdir
 
-using TMI, GH19, Plots, ProgressMeter
+using TMI, GH19, PythonPlot, ProgressMeter
 using Printf, Statistics
-using Colors: colorant, hex
+using Colors, LaTeXStrings
 include("random_profiles.jl")
 include("load_GH19.jl")
 
@@ -52,60 +52,88 @@ function bootstrap_PI_lgm_differences(N_sample, Nboot; sampling_method=:uniform)
     return results_dict
 end
 
-function generate_temperature_difference_plot(bootstrap_results,  
-                                             sampling_method, N_sample, Nboot, output_filename)
-    # Calculate average differences
+function generate_temperature_difference_plot(bootstrap_results,
+                                              sampling_method,
+                                              N_sample, Nboot,
+                                              output_filename)
+    # unpack inputs
     @unpack bootstrapped_profiles, LGM_theta, PI_theta, γ_PI, γ_lgm = bootstrap_results
-        
-    delta_sst = mean(bootstrapped_profiles["PI_surface"] .- bootstrapped_profiles["LGM_surface"], dims=1)[:]
-    delta_mot = mean(bootstrapped_profiles["PI_bottom"] .- bootstrapped_profiles["LGM_bottom"], dims=1)[:]
 
-    # Define consistent plot style for all plots
-    plot_style = Dict(
-        :xlabel => "\$\\overline{\\Delta{SST}}(^\\circ C)\$", 
-        :ylabel => "\$\\overline{\\Delta{MOT}}(^\\circ C)\$",
-        :title => "\$\\Delta\$Ocean Temp. (LGM vs. PI)", 
-        :markerstrokewidth => 0.1, :markersize => 3,
-        :legend => :bottomright, 
-        :right_margin => 2Plots.mm, :left_margin => 2Plots.mm,
-        :bottom_margin => 2Plots.mm,  # Add extra margin for the legend
-        :size => (700, 700), :dpi => 1000,
-        :titlefontsize=>18, :guidefontsize=>15,
-        :tickfontsize=>13, :legendfontsize=>10,        
-        :xlims => (-2, 5), :ylims => (-2, 5),
-    )
-    
-    sampling_description = sampling_method == :uniform ? "uniform grid sampling" : "area-weighted spherical sampling"
-    
-    # Create the error bars from Seltzer 2024 (LGM - PI diff) 
-    SeltΔMOT = 2.27; SeltΔMOT_1σerr = 0.46
+    # compute deltas
+    delta_sst = vec(mean(bootstrapped_profiles["PI_surface"] .-
+                         bootstrapped_profiles["LGM_surface"], dims=1))
+    delta_mot = vec(mean(bootstrapped_profiles["PI_bottom"] .-
+                         bootstrapped_profiles["LGM_bottom"], dims=1))
 
-    p = plot(collect(plot_style[:xlims]), fill(SeltΔMOT, length(collect(plot_style[:xlims]))),
-            grid=false,ribbon=SeltΔMOT_1σerr,
-            linewidth = 1.5,
-            color = :deeppink,fillalpha=.2, 
-            label = "Seltzer et. al., 2024")
+    # sampling description
+    sampling_description = sampling_method == :uniform ?
+        "uniform grid sampling" : "area-weighted spherical sampling"
+
+    # reference values
+    SeltΔMOT = 2.27; SeltΔMOT_σ = 0.46
+
+    # figure + axes
+    fig, ax = subplots(figsize=(7,7), dpi=250)
+
+    # x-range for reference lines
+    x_min, x_max = 0, 5
+    xs = collect(range(x_min, x_max, length=200))
+
+    # Seltzer line + error ribbon
+    ys = fill(SeltΔMOT, length(xs))
+    ax.plot(xs, ys;
+            color="hotpink", linewidth=1.5,
+            label="Seltzer et al., 2024", zorder = 1)
+    ax.fill_between(xs,
+                    ys .- SeltΔMOT_σ, ys .+ SeltΔMOT_σ;
+                    color="hotpink", alpha=0.2, zorder = 0)
+
+    # bootstrap means scatter
+    ax.scatter(delta_sst, delta_mot;
+               s=9, alpha=0.4,
+               color="dodgerblue",
+               linewidths=0.2,
+                label = "Pseudo Sample Average\n" * L"($n_s = $" * "$N_sample" * L"$)$",
+               # label="Bootstrap avgs: $Nboot dots\n(mean of $N_sample samples, $sampling_description)", 
+                zorder = 8)
+
+    # 1:1 reference
+    ax.plot(xs, xs, linestyle="--", linewidth=1.0, color="k")
+
+    # bootstrapped mean point
+    ax.scatter([mean(delta_sst)], [mean(delta_mot)],
+               marker="s",
+               s=100, edgecolor="k",
+               facecolor="dodgerblue",
+               linewidths=1.5,
+               label = "All Pseudo Sample Averages\n" * L"($n_{t} = n_s $" * L"\times" * "$Nboot" * L"$)$",
+                zorder = 10)
+
+    # true global-average point
+    global_sst_diff = global_surface_average(PI_theta, γ_PI) -
+                      global_surface_average(LGM_theta, γ_lgm)
+    global_mot_diff = global_ocean_average(PI_theta, γ_PI) -
+                      global_ocean_average(LGM_theta, γ_lgm)
     
-    scatter!(delta_sst, delta_mot, alpha = 0.5,
-        label="Bootstrap avgs, $Nboot dots total, each dot is avg of $N_sample samples\n($sampling_description)", color=:dodgerblue; plot_style...)
-    plot!(collect(plot_style[:xlims]), collect(plot_style[:xlims]), label="1:1",
-          linestyle=:dash, linewidth=2, color=:black)
-    
-    # Add mean and global average points
-    highlight = Dict(:markerstrokewidth => 1.5, :markersize => 10, :order => 10, :alpha => 1.0)
-    
-    scatter!([mean(delta_sst)], [mean(delta_mot)], 
-        label="Mean diff averaged over all samples", color=:dodgerblue, 
-        marker = :rect; 
-        highlight...)
-    
-    global_sst_diff = global_surface_average(PI_theta, γ_PI) - global_surface_average(LGM_theta, γ_lgm)
-    global_mot_diff = global_ocean_average(PI_theta, γ_PI) - global_ocean_average(LGM_theta, γ_lgm)
-    
-    scatter!([global_sst_diff], [global_mot_diff], 
-        label="TMI Volume Weighted Differences\n(GH19 PI - G14 LGM)", 
-        color=:sienna4,   marker= :rect,; highlight...)
-    
-    savefig(plotsdir(output_filename))
-    return p
+    ax.scatter([global_sst_diff], [global_mot_diff];
+               marker="s",
+               s=100, edgecolor="k", 
+               facecolor="sienna",
+               linewidths=1.5,
+               label="TMI Volume Weighted Differences\n(GH19 PI – G14 LGM)", zorder = 10)
+
+    # labels, title, limits, legend
+    # ax.set_xlabel(raw"$\overline{\Delta \mathrm{SST}}\;(^\circ\mathrm{C})$")
+    # ax.set_ylabel(raw"$\overline{\Delta \mathrm{MOT}}\;(^\circ\mathrm{C})$")
+    ax.set_ylabel("Mean Ocean Temperature Change" * raw"$(^\circ\mathrm{C})$")
+    ax.set_xlabel("Mean SST Change" * raw"$(^\circ\mathrm{C})$")
+    # ax.set_title(raw"$\Delta\,$Ocean Temp. (LGM vs. PI)")
+    ax.set_xlim(x_min, x_max)
+    ax.set_ylim(x_min, x_max)
+    ax.legend(loc="upper right", fontsize=8, ncols = 2)
+    ax.spines["top"].set_visible(false)
+    ax.spines["right"].set_visible(false)
+    # layout + save
+    # fig.tight_layout()
+    fig.savefig(plotsdir(output_filename), dpi = 200, bbox_inches = "tight")
 end
