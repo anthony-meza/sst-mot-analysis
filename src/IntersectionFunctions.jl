@@ -8,7 +8,9 @@ function return_intersection(x::BoundaryCondition, y::BoundaryCondition)
 end
 function plot_map_and_zonal(lon, lat, map_data, zonal_vals;
                         map_norm, cmap, map_title, cb_label,
-                        zonal_xticks, zonal_title, savepath, plot_zonal = false)
+                        zonal_xticks, zonal_title, savepath, 
+                        plot_zonal = false, plot_letter = "A", hide_yticklabels = false)
+    yticks = -90:30:90
     fig = figure(figsize=(15,5))
     ax  = fig.add_subplot(131,  projection=ccrs.PlateCarree(central_longitude = 180))
 
@@ -16,7 +18,7 @@ function plot_map_and_zonal(lon, lat, map_data, zonal_vals;
     ax.add_feature(cfeature.LAND, zorder=100, edgecolor="#B0B0B0", facecolor = "#B0B0B0")
     ax.coastlines(color="#B0B0B0", alpha=0.3); ax.gridlines(alpha=0.0)
 
-    ax.set_xticks([-180,-90,0,90,180]); ax.set_yticks(-90:15:90)
+    ax.set_xticks([-180,-90,0,90,180]); ax.set_yticks(yticks)
     mesh = ax.pcolormesh(lon, lat, map_data;
                         cmap=cmap, norm=map_norm,
                         transform=ccrs.PlateCarree())
@@ -35,6 +37,12 @@ function plot_map_and_zonal(lon, lat, map_data, zonal_vals;
         transform=cb.ax.transAxes, rotation=0)
     fig.tight_layout()
     
+    ax.text(0.02, 0.03, plot_letter,
+        transform=ax.transAxes,
+        fontsize=14,
+        fontweight="bold", zorder = 1000)
+    
+
     if plot_zonal
         # # — zonal panel —
         axz = fig.add_subplot(132)
@@ -47,13 +55,22 @@ function plot_map_and_zonal(lon, lat, map_data, zonal_vals;
     
         
         axz.plot(zonal_vals[:], lat, "o-k"; markersize=5, alpha=0.7)
-        axz.set_yticks(-90:15:90); axz.set_ylim(-90, 90)
+        axz.set_yticks(yticks); axz.set_ylim(-89, 89)
         axz.tick_params(labelleft=false)    
         axz.set_xticks(zonal_xticks)
         axz.grid(alpha=0.3)
         axz.set_title(zonal_title); axz.set_xlabel(cb_label)
     end
-    
+
+    if hide_yticklabels
+        # turn off the labels on the left for both major and minor ticks
+        ax.tick_params(axis="y", which="both", labelleft=false)  
+        if plot_zonal
+            axz.tick_params(axis="y", which="both", labelleft=false)  
+        end
+    end
+            
+        
     fig.savefig(savepath; dpi=200, bbox_inches="tight")
     if plot_zonal
         return fig, ax, axz

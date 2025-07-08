@@ -83,7 +83,7 @@ function generate_temperature_difference_plot(bootstrap_results,
     fig, ax = subplots(figsize=(6,6))
 
     # x-range for reference lines
-    x_min, x_max = 0, 4.5
+    x_min, x_max = -.5, 4.5
     xs = collect(range(x_min, x_max, length=200))
 
     # Seltzer line + error ribbon
@@ -132,13 +132,17 @@ function generate_temperature_difference_plot(bootstrap_results,
     # labels, title, limits, legend
     # ax.set_xlabel(raw"$\overline{\Delta \mathrm{SST}}\;(^\circ\mathrm{C})$")
     # ax.set_ylabel(raw"$\overline{\Delta \mathrm{MOT}}\;(^\circ\mathrm{C})$")
-    ax.set_ylabel("Mean Ocean Temperature Change" * raw"$(^\circ\mathrm{C})$")
-    ax.set_xlabel("Mean SST Change" * raw"$(^\circ\mathrm{C})$")
+    # ax.set_ylabel("Mean Ocean Temperature Change" * L"[\circ \textrm{C}]")
+    # ax.set_xlabel("Mean SST Change" * L"[\circ \textrm{C}]")
+    ax.set_ylabel(L"\Delta \text{MOT}" * L"[^\circ \text{C}]")
+    ax.set_xlabel(L"\Delta \text{SST}" * L"[^\circ \text{C}]")
     # ax.set_title(raw"$\Delta\,$Ocean Temp. (LGM vs. PI)")
     ax.set_xlim(x_min, x_max)
     ax.set_ylim(x_min, x_max)
-    ax.legend(loc="lower right", fontsize=8, ncols = 2, framealpha = 0.9)
+    ax.legend(loc="lower right", fontsize=9, ncols = 2, framealpha = 0.9)
     ax.spines["top"].set_visible(false)
     ax.spines["right"].set_visible(false)
+    ax.grid(alpha = 0.2, zorder = 0)
+    fig.savefig(output_filename; dpi=200, bbox_inches="tight")
     return fig, ax 
 end
