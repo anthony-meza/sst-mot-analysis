@@ -7,6 +7,7 @@ import TMI: observe
 @inline tuplejoin(x) = x
 @inline tuplejoin(x, y) = (x..., y...)
 
+target_surf_idx = 1
 """
     function wetlocation(γ)
     Get (lon,lat,depth) tuples of wet locations.
@@ -24,7 +25,7 @@ function wetsurfacelocation(γ; sampling=:uniform, printdry = false)
             if sampling == :uniform
                 loc = (rand(minimum(γ.lon):0.1:maximum(γ.lon)),
                     rand(minimum(γ.lat):0.1:maximum(γ.lat)),
-                    γ.depth[1])
+                    γ.depth[target_surf_idx])
                 iswet(loc,γ) && return loc[1:2]
                 if printdry
                     println("dry point, try again")
@@ -34,11 +35,11 @@ function wetsurfacelocation(γ; sampling=:uniform, printdry = false)
                 #https://extremelearning.com.au/how-to-generate-uniformly-random-points-on-n-spheres-and-n-balls/
                 randlat = acos(2rand()-1) - 90 #random number -90, 90
                 randlon = 2π * rand()
-                loc = (randlon, randlat, γ.depth[1])
+                loc = (randlon, randlat, γ.depth[target_surf_idx])
                 iswet(loc,γ) && return loc[1:2]
                 if printdry
                     println("dry point, try again")
-                end
+                end            
             else
                 throw("specified method not implemented")
 
@@ -59,7 +60,7 @@ function wetsurfacelocation(γ1, γ2; sampling_method=:uniform, printdry = false
             if sampling_method == :uniform
                 loc = (rand(min_lon:0.1:max_lon),
                     rand(min_lat:0.1:max_lat),
-                    γ1.depth[1]) #use the first grid's depth grid, probably not the best but a quick fixx
+                    γ1.depth[target_surf_idx]) #use the first grid's depth grid, probably not the best but a quick fixx
                 (iswet(loc,γ1) * iswet(loc,γ2)) && return loc[1:2]
                 if printdry
                     println("dry point, try again")
@@ -72,12 +73,11 @@ function wetsurfacelocation(γ1, γ2; sampling_method=:uniform, printdry = false
                 # randlat = acos((2 * rand(-1:0.0005:1))-1) - 90 #random number -90, 90
                 # randlon = 2π * rand(-1:0.0005:1)
 
-                loc = (randlon, randlat, γ1.depth[1])
+                loc = (randlon, randlat, γ1.depth[target_surf_idx])
                 (iswet(loc,γ1) * iswet(loc,γ2)) && return loc[1:2]
                 if printdry
                     println("dry point, try again")
-                end
-            else
+                end            else
                 throw("specified method not implemented")
             end
         end # if not, then start over.
