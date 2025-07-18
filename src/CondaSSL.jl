@@ -9,7 +9,7 @@ ENV["JULIA_CONDAPKG_ALLOWED_CHANNELS"] = "conda-forge anaconda"
 
 # 1. Ensure we have the SSL bits
 for pkg in ("openssl", "ca-certificates")
-    if pkg ∈ keys(CondaDeps)
+    if pkg ∉ keys(CondaDeps)
         CondaPkg.add(pkg)
     end
 end
