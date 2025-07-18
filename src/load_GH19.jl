@@ -2,7 +2,7 @@ using DrWatson
 @quickactivate "sst-mot-analysis"
 
 using GH19, TMI
-using ProgressMeter
+using ProgressMeter, Downloads
 
 import DrWatson.datadir
 
