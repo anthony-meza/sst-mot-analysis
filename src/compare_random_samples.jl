@@ -18,7 +18,7 @@ sns.set_theme(context="notebook", style="ticks",
 last_non_nan(v) = findlast(!isnan, v) !== nothing ? v[findlast(!isnan, v)] : NaN
 last_non_nan(m::Matrix) = last_non_nan.(eachcol(m))
 global_ocean_average(x::AbstractArray, γ::Grid) = sum(replace(x, NaN=>0.0) .* cellvolume(γ).tracer) / sum(cellvolume(γ).tracer)
-global_surface_average(x::AbstractArray, γ::Grid) = sum(replace(x[:, :, 1], NaN=>0.0) .* cellvolume(γ).tracer[:, :, 1]) / sum(cellvolume(γ).tracer[:, :, 1])
+global_surface_average(x::AbstractArray, γ::Grid) = sum(replace(x[:, :, surfaceindex(γ)], NaN=>0.0) .* cellvolume(γ).tracer[:, :, surfaceindex(γ)]) / sum(cellvolume(γ).tracer[:, :, surfaceindex(γ)])
 
 function bootstrap_PI_lgm_differences(N_sample, Nboot; sampling_method=:uniform, 
                                     locs::Union{Nothing, Vector{Tuple{Float64, Float64}}}=nothing)
@@ -54,12 +54,12 @@ function bootstrap_PI_lgm_differences(N_sample, Nboot; sampling_method=:uniform,
 
 
         # Sample LGM and PI temperature profiles
-        y_lgm, _, _, _ = random_profiles(TMIversion_lgm, "θ", γ_lgm, N_sample; locs=locs_boot)
-        bootstrapped_profiles["LGM_surface"][:, ib] .= y_lgm[target_surf_idx, :] 
+        y_lgm, _, _, _ = random_profiles(LGM_theta, γ_lgm, N_sample; locs=locs_boot)
+        bootstrapped_profiles["LGM_surface"][:, ib] .= y_lgm[surfaceindex(γ_lgm), :] 
         bootstrapped_profiles["LGM_bottom"][:, ib] .= last_non_nan(y_lgm)
 
         y_PI, _, _, _ = random_profiles(PI_theta, γ_PI, N_sample; locs=locs_boot)
-        bootstrapped_profiles["PI_surface"][:, ib] .= y_PI[target_surf_idx, :] 
+        bootstrapped_profiles["PI_surface"][:, ib] .= y_PI[surfaceindex(γ_PI), :] 
         bootstrapped_profiles["PI_bottom"][:, ib] .= last_non_nan(y_PI)
         # set_description(iter, string(@sprintf("Bootstrap Iter: %.2f", ib)))
 
@@ -93,7 +93,7 @@ function generate_temperature_difference_plot(bootstrap_results,
 
     # x-range for reference lines
     if isnothing(xlims)
-        x_min, x_max = -.5, 4.5
+        x_min, x_max = -.5, 6
     else
         x_min, x_max = xlims
     end

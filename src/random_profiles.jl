@@ -2,12 +2,11 @@ using DrWatson
 @quickactivate "sst-mot-analysis"
 
 using TMI, Interpolations, Statistics, Distributions
-import TMI: observe
+import TMI: observe, surfaceindex
 
 @inline tuplejoin(x) = x
 @inline tuplejoin(x, y) = (x..., y...)
 
-target_surf_idx = 1
 """
     function wetlocation(γ)
     Get (lon,lat,depth) tuples of wet locations.
@@ -19,6 +18,9 @@ target_surf_idx = 1
 - `loc`: lon,lat,depth """
 function wetsurfacelocation(γ; sampling=:uniform, printdry = false)
     #Paban Modified
+    
+        target_surf_idx = surfaceindex(γ)
+    
         confirmwet = false
         neighbors  = 8
         while !confirmwet
@@ -55,12 +57,18 @@ function wetsurfacelocation(γ1, γ2; sampling_method=:uniform, printdry = false
         max_lon = maximum([maximum(γ1.lon), maximum(γ2.lon)])
         min_lat= minimum([minimum(γ1.lat), minimum(γ2.lat)])
         max_lat = maximum([maximum(γ1.lat), maximum(γ2.lat)])
+    
+        γ1_surf_depth = γ1.depth[surfaceindex(γ1)]
+        γ2_surf_depth = γ2.depth[surfaceindex(γ2)]
 
+        target_surf_depth = maximum([γ1_surf_depth, γ2_surf_depth])
+    
         while !confirmwet
             if sampling_method == :uniform
                 loc = (rand(min_lon:0.1:max_lon),
                     rand(min_lat:0.1:max_lat),
-                    γ1.depth[target_surf_idx]) #use the first grid's depth grid, probably not the best but a quick fixx
+                    target_surf_depth)
+            
                 (iswet(loc,γ1) * iswet(loc,γ2)) && return loc[1:2]
                 if printdry
                     println("dry point, try again")
@@ -73,7 +81,7 @@ function wetsurfacelocation(γ1, γ2; sampling_method=:uniform, printdry = false
                 # randlat = acos((2 * rand(-1:0.0005:1))-1) - 90 #random number -90, 90
                 # randlon = 2π * rand(-1:0.0005:1)
 
-                loc = (randlon, randlat, γ1.depth[target_surf_idx])
+                loc = (randlon, randlat, target_surf_depth)
                 (iswet(loc,γ1) * iswet(loc,γ2)) && return loc[1:2]
                 if printdry
                     println("dry point, try again")
@@ -98,11 +106,20 @@ end
 - `locs`: 3-tuples of locations for observations
 - `wis`: weighted indices for interpolation to locs sites
 """
-function random_profiles(TMIversion,variable,γ,N; σ=0.0, locs = nothing)
+function random_profiles(TMIversion,variable,γ0,N; σ=0.0, locs = nothing)
 
     TMIfile = TMI.pkgdatadir("TMI_"*TMIversion*".nc")
     
-    θtrue = readfield(TMIfile,variable,γ)
+    if TMIversion == "LGM_90x45x33_G14"
+        γ = LGM_MSL_grid(γ0)
+        θtrue = readfield_lgm(TMIfile,variable,γ0)
+    else
+        γ = γ0
+        θtrue = readfield(TMIfile,variable,γ)
+
+    end
+    
+
     replace!(θtrue.tracer,NaN=>0.0)
 
     # get random locations that are wet (ocean)

@@ -1634,11 +1634,11 @@ version = "7.7.0+0"
 
 [[deps.TMI]]
 deps = ["CSV", "Distances", "Distributions", "Downloads", "GibbsSeaWater", "GoogleDrive", "Interpolations", "LineSearches", "LinearAlgebra", "NCDatasets", "NetCDF", "Optim", "OrderedCollections", "SparseArrays", "UnicodePlots"]
-git-tree-sha1 = "584c1ec0ead51e2efbda1fda051871545f209cbc"
+git-tree-sha1 = "8f818829a98bc67361791f4ee841756a59d6b272"
 repo-rev = "main"
 repo-url = "https://github.com/ggebbie/TMI.jl"
 uuid = "582500f6-28c8-4d8f-aabe-b197735ec1d4"
-version = "0.2.25"
+version = "0.3.2"
 
     [deps.TMI.extensions]
     TMIGeoPythonPlotExt = "GeoPythonPlot"
