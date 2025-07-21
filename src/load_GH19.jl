@@ -34,6 +34,22 @@ function load_GH19_equillibrium(;expt = "OPT-0015", variable = "theta", time_idx
     return thetabar_eq
 end
 
+function load_GH19_equillibrium(;expt = "OPT-0015", variable = "theta", time_idx = 1)
+    A, Alu, γ, TMIfile, L, B = config(GH19.TMIversion()); 
+    
+    theta = GH19.readfield_snapshot(datadir("Theta_$expt.nc"), variable, time_idx, γ)
+    thetap = GH19.readfield_snapshot(datadir("Theta_anom_$expt.nc"), variable, time_idx, γ)
+    
+    thetabar = theta - thetap
+
+    thetabar_BC = TMI.getsurfaceboundary(thetabar)
+
+    ## preformed phosphate
+    thetabar_eq = TMI.steadyinversion(Alu,thetabar_BC,γ)
+    
+    return thetabar_eq
+end
+
 
 """
     function download_exp(experiment::String;anomaly=false)
