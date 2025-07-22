@@ -6,6 +6,7 @@ function return_intersection(x::BoundaryCondition, y::BoundaryCondition)
     y_copy.tracer[ xnan .| ynan] .= NaN
     return x, y
 end
+
 function plot_map_and_zonal(lon, lat, map_data, zonal_vals;
                         map_norm, cmap, map_title, cb_label,
                         zonal_xticks, zonal_title, savepath, 
