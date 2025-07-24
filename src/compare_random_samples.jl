@@ -8,6 +8,7 @@ using Colors, LaTeXStrings
 
 include("random_profiles.jl")
 include("load_GH19.jl")
+include("TMI_utils.jl")
 
 sns = pyimport("seaborn")
 custom_style = Dict("text.color" => "black")
@@ -24,7 +25,7 @@ function bootstrap_PI_lgm_differences(N_sample, Nboot; sampling_method=:uniform,
                                     locs::Union{Nothing, Vector{Tuple{Float64, Float64}}}=nothing)
     # Configure LGM dataset
     TMIversion_lgm = "LGM_90x45x33_G14"
-    A_lgm, Alu_lgm, γ_lgm, TMIfile_lgm, L_lgm, B_lgm = config(TMIversion_lgm)
+    A_lgm, Alu_lgm, γ_lgm, TMIfile_lgm, L_lgm, B_lgm = config(DrWatson.datadir(), "TMI_" * TMIversion_lgm * "_compressed.nc")
     LGM_theta = readfield(TMIfile_lgm, "θ", γ_lgm).tracer
     
     # Configure PI dataset
@@ -140,7 +141,7 @@ function generate_temperature_difference_plot(bootstrap_results,
                s=100, edgecolor="k", 
                facecolor="sienna",
                linewidths=1.5,
-               label="Volume/Area Weighted Differences\n(GH19 PI – G14 LGM)", zorder = 10)
+               label="Volume/Area Weighted Differences\n(GH19 PI – G14 Compressed LGM)", zorder = 10)
     println("dSST-TMI: ", global_sst_diff)
     println("dMOT-TMI: ", global_mot_diff)
 
